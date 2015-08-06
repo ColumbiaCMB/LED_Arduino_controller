@@ -1,0 +1,196 @@
+#include "TimerOne.h"
+const int NUMBER_OF_FIELDS = 4;
+int fieldIndex = 0;
+long int values[NUMBER_OF_FIELDS];
+volatile char LEDSwitch_Row = 0;
+volatile char LEDSwitch_Column = 0;
+volatile unsigned long int period = 800;
+volatile unsigned long int pulse_time = 400;
+void setup() {
+  timer_initialize();
+  Serial.begin(9600);
+  pinMode(13, OUTPUT);
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(7, OUTPUT);
+  pinMode(9, OUTPUT);
+  pinMode(10, OUTPUT);
+  pinMode(11, OUTPUT);
+  pinMode(12, OUTPUT);
+  pinMode(8, OUTPUT);
+}
+void timer_initialize(){
+  Timer1.initialize(period);
+  Timer1.attachInterrupt(timer_ISR);
+  Serial.println("Timer initialized.");
+}
+void timer_ISR(){
+  LED_Row(LEDSwitch_Row);
+  LED_Column(LEDSwitch_Column);
+  delayMicroseconds(pulse_time);
+  LED_Row(0);
+  LED_Column(0);
+}
+
+void LED_Row(char LEDSwitch_Row) {
+  if(LEDSwitch_Row == 0){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 1){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, HIGH);
+  }
+  else if(LEDSwitch_Row == 2){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, HIGH);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 3){
+    digitalWrite(2, HIGH);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 4){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, HIGH);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 5){
+    digitalWrite(2, LOW);
+    digitalWrite(4, HIGH);
+    digitalWrite(5, LOW);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 6){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, HIGH);
+    digitalWrite(6, LOW);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }
+  else if(LEDSwitch_Row == 7){
+    digitalWrite(2, LOW);
+    digitalWrite(4, LOW);
+    digitalWrite(5, LOW);
+    digitalWrite(6, HIGH);
+    digitalWrite(9, LOW);
+    digitalWrite(11, LOW);
+    digitalWrite(12, LOW);
+  }  
+}
+void LED_Column(char LEDSwitch_Column){
+  if(LEDSwitch_Column == 0){
+    digitalWrite(13,HIGH);
+    digitalWrite(3,HIGH);
+    digitalWrite(10,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(8,HIGH);
+  }
+  else if(LEDSwitch_Column == 1){
+    digitalWrite(13,LOW);
+    digitalWrite(3,HIGH);
+    digitalWrite(10,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(8,HIGH);
+  }
+  else if(LEDSwitch_Column == 2){
+    digitalWrite(13,HIGH);
+    digitalWrite(3,LOW);
+    digitalWrite(10,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(8,HIGH);
+  }
+  else if(LEDSwitch_Column == 3){
+    digitalWrite(13,HIGH);
+    digitalWrite(3,HIGH);
+    digitalWrite(10,LOW);
+    digitalWrite(7,HIGH);
+    digitalWrite(8,HIGH);
+  }
+  else if(LEDSwitch_Column == 4){
+    digitalWrite(13,HIGH);
+    digitalWrite(3,HIGH);
+    digitalWrite(10,HIGH);
+    digitalWrite(7,LOW);
+    digitalWrite(8,HIGH);
+  }
+  else if(LEDSwitch_Column == 5){
+    digitalWrite(13,HIGH);
+    digitalWrite(3,HIGH);
+    digitalWrite(10,HIGH);
+    digitalWrite(7,HIGH);
+    digitalWrite(8,LOW);
+  }
+}
+void loop(){
+  if(Serial.available()){
+    char ch = Serial.read();
+    if(ch >= '0' && ch <= '9'){
+      if(fieldIndex < NUMBER_OF_FIELDS){
+        values[fieldIndex] = (values[fieldIndex]*10) + (ch - '0');
+      }
+    }
+    else if(ch == ','){
+      fieldIndex++;
+    }
+    else{
+      if(1 <= values[0] <= 7 && 1 <=values[1] <= 5){
+        LEDSwitch_Row = values[0];
+        LEDSwitch_Column = values[1];
+        period = values[2];
+        pulse_time = values[3];
+        Serial.print("Row ");
+        Serial.print(values[0]);
+        Serial.print(", Column ");
+        Serial.println(values[1]);
+        Serial.print("Period: ");
+        Serial.print(values[2]);
+        Serial.println(" microseconds");
+        Serial.print("Pulse Duration: ");
+        Serial.print(values[3]);
+        Serial.println(" microseconds");
+        for(int i=0; i < min(NUMBER_OF_FIELDS, fieldIndex+1); i++){
+          values[i] = 0;
+        }
+        fieldIndex = 0;
+        timer_initialize();
+      }  
+      else{
+        Serial.print("LED Position specified invalid. Please try again.");
+      }     
+    }  
+  }
+  else{
+  }
+}
