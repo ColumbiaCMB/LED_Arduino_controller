@@ -1,0 +1,106 @@
+//Inputs over Serial COM should be numbers separated by commas and no spaces,
+//The first number inputted sets the period in microseconds,
+//The second sets the pulse time in microseconds (must be less than 16383)
+//The third sets the number of frames that will be looped. Make sure this is one less than MaxFrames (eg. if MaxFrames = 100, number of frames should be 99 max).
+//Next, the specific LED Patterns are determined by sets of 5 bytes (0-127).
+//IMPORTANT: Make sure in the COM interface to change "No line ending" to "Newline". The newline signals the loop to stop parsing.
+#include "TimerOne.h"
+#include "avr/pgmspace.h"
+int fieldIndex = 0;
+const int MaxFrames = 100;
+long int values[253];
+long int period = 8204;
+unsigned int duration;
+int N_of_Frames;
+byte BitMap[MaxFrames][5];
+int ledPins[] = {0, 12, 11, 2, 9, 4, 5, 6, 13, 3, 10, 7, 8};
+int ArrayIndex = 0;
+void setup() {
+  timer_initialize();
+  Serial.begin(19200);
+  for(int thisPin = 2; thisPin < 14; thisPin++){
+    pinMode(thisPin, OUTPUT);
+  }
+}
+
+void timer_initialize(){
+  Timer1.initialize(period);
+  Timer1.attachInterrupt(timerisr);
+}
+
+void timerisr(){//Interrupt Service Routine whenever timer 1 times out
+  DisplayBitMap(ArrayIndex);
+  ArrayIndex++;
+  if(ArrayIndex > N_of_Frames){
+    ArrayIndex = 0; 
+    DisplayBitMap(ArrayIndex);
+    ArrayIndex++;
+  }   
+}
+
+void DisplayBitMap(int p){
+  for(byte x=0; x<5; x++){
+    byte data = BitMap[p][x];
+    for(byte y=0; y<7; y++){
+      if(data & (1<<y)){
+        int i = (int)y + 1;
+        int j = (int)x + 1;
+        LED(i, j);
+      }
+      else{
+      }
+    }
+  }
+}
+void LED(int i, int j){
+  for(int m=1; m<8; m++){
+    digitalWrite(ledPins[m], LOW);
+  }
+  for(int m=8; m<13; m++){
+    digitalWrite(ledPins[m], HIGH);
+  }  
+  digitalWrite(ledPins[i], HIGH);
+  digitalWrite(ledPins[j+7], LOW);
+  Serial.print(i);
+  Serial.print(", ");
+  Serial.println(j);
+  delayMicroseconds(duration);
+  digitalWrite(ledPins[i], LOW);
+  digitalWrite(ledPins[j+7],HIGH);
+}
+
+void loop(){
+  while(Serial.available()){
+    char ch = Serial.read();
+    if(ch >= '0' && ch <= '9'){
+      values[fieldIndex] = (values[fieldIndex]*10) + (ch - '0');
+    }
+    else if(ch == ','){
+      fieldIndex++;
+    }
+    else{
+      period = values[0];
+      duration = values[1];
+      N_of_Frames = values[2];
+      for(int p = 0; p < N_of_Frames; p++){
+        for(int q=0; q<5; q++){
+          BitMap[p][q] = values[3+q+5*p];  
+        }
+      }
+      for(int i=0; i< N_of_Frames; i++){
+        Serial.print("{");
+        for(int j=0; j<5; j++){
+          Serial.print(BitMap[i][j]);
+          Serial.print(",");
+        }
+        Serial.println("}");
+      }
+      for(int i=0; i < min(12, fieldIndex+1); i++){
+        values[i] = 0;
+      }
+      fieldIndex = 0;
+      timer_initialize();
+      ArrayIndex = 0;  
+    }  
+  }
+}         
