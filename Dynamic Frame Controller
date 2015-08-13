@@ -4,11 +4,12 @@
 //The third sets the number of frames that will be looped. Make sure this is one less than MaxFrames (eg. if MaxFrames = 100, number of frames should be 99 max).
 //Next, the specific LED Patterns are determined by sets of 5 bytes (0-127).
 //IMPORTANT: Make sure in the COM interface to change "No line ending" to "Newline". The newline signals the loop to stop parsing.
+
 #include "TimerOne.h"
 #include "avr/pgmspace.h"
 int fieldIndex = 0;
-const int MaxFrames = 100;
-long int values[253];
+const int MaxFrames = 50;
+long int values[MaxFrames*5 + 3];
 long int period = 8204;
 unsigned int duration;
 int N_of_Frames;
@@ -61,9 +62,6 @@ void LED(int i, int j){
   }  
   digitalWrite(ledPins[i], HIGH);
   digitalWrite(ledPins[j+7], LOW);
-  Serial.print(i);
-  Serial.print(", ");
-  Serial.println(j);
   delayMicroseconds(duration);
   digitalWrite(ledPins[i], LOW);
   digitalWrite(ledPins[j+7],HIGH);
